@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JOKGEN Rei</title>
+
+<style>
+body{margin:0;font-family:Arial;background:linear-gradient(180deg,#0f1b2e,#1b2c4a);color:white;}
+.container{max-width:420px;margin:20px auto;padding:15px;}
+h1{text-align:center;color:#22c55e;}
+.subtitle{text-align:center;opacity:.8;margin-bottom:15px;}
+.nav-buttons{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;}
+.nav-buttons button{flex:1;padding:10px;border:none;border-radius:12px;font-weight:bold;cursor:pointer;}
+.card{background:#1e293b;padding:15px;border-radius:15px;margin-bottom:15px;}
+button.general{width:100%;padding:10px;border:none;border-radius:12px;margin-top:8px;cursor:pointer;}
+.btn-blue{background:#2563eb;color:white;}
+.btn-green{background:#22c55e;color:white;}
+input,select{width:100%;padding:10px;border-radius:10px;border:none;margin-top:8px;}
+.total-box{background:#0f172a;padding:10px;border-radius:10px;margin-top:10px;text-align:center;}
+.order{background:#0f172a;padding:10px;border-radius:10px;margin-top:10px;}
+.order img{max-width:100%;border-radius:10px;margin-top:5px;}
+#splashScreen{position:fixed;width:100%;height:100vh;background:#0f1b2e;display:flex;justify-content:center;align-items:center;z-index:9999;}
+</style>
+</head>
+
+<body>
+
+<div id="splashScreen"><h1>🔥 JOKGEN Rei 🔥</h1></div>
+
+<div class="container">
+<h1>🔥 JOKGEN Rei 🔥</h1>
+<div class="subtitle">Trusted • Fast Process • 100% Aman</div>
+
+<div style="text-align:center;margin-bottom:10px;">
+<button class="btn-blue general" onclick="loginOwner()">Login Owner</button>
+<button class="btn-blue general" onclick="loginAdmin()">Login Admin</button>
+<button class="btn-blue general" onclick="logout()" id="logoutBtn" style="display:none;">Logout</button>
+</div>
+
+<div class="nav-buttons">
+<button onclick="showPage('order')">Order</button>
+<button onclick="showPage('queue')">Antrian</button>
+<button onclick="showPage('history')">History</button>
+<button id="btnConfirm" onclick="showPage('confirm')" style="display:none;">Konfirmasi</button>
+<button id="btnAdmin" onclick="showPage('admin')" style="display:none;">Admin</button>
+</div>
+
+<div id="pageOrder">
+<div class="card">
+<input id="nama" placeholder="Nama">
+<input id="wa" placeholder="WhatsApp">
+<select id="mode">
+<option value="8000">Inferno - Rp 8.000</option>
+<option value="6000">Dark Cave Port - Rp 6.000</option>
+</select>
+<input type="number" id="match" placeholder="Jumlah Match">
+<div class="total-box">Total: Rp <span id="total">0</span></div>
+<input type="file" id="bukti">
+<button class="btn-green general" onclick="tambahOrder()">Tambah Order</button>
+</div>
+</div>
+
+<div id="pageQueue" style="display:none;"><h3>Antrian</h3><div id="listQueue"></div></div>
+<div id="pageHistory" style="display:none;"><h3>History</h3><div id="listHistory"></div></div>
+<div id="pageConfirm" style="display:none;"><h3>Konfirmasi</h3><div id="listConfirm"></div></div>
+<div id="pageAdmin" style="display:none;"><h3>Admin</h3><div id="listAdmin"></div></div>
+
+</div>
+
+<script>
+window.addEventListener("load",()=>{
+setTimeout(()=>{document.getElementById("splashScreen").style.display="none";},1200);
+});
+
+document.getElementById("mode").onchange=
+document.getElementById("match").oninput=function(){
+const harga=parseInt(document.getElementById("mode").value)||0;
+const jumlah=parseInt(document.getElementById("match").value)||0;
+document.getElementById("total").innerText=harga*jumlah;
+};
+
+function showPage(p){
+["pageOrder","pageQueue","pageHistory","pageConfirm","pageAdmin"]
+.forEach(x=>document.getElementById(x).style.display="none");
+document.getElementById("page"+p.charAt(0).toUpperCase()+p.slice(1)).style.display="block";
+}
+
+function loginOwner(){
+let p=prompt("Password Owner:");
+if(p==="owner123"){
+document.getElementById("btnConfirm").style.display="block";
+document.getElementById("logoutBtn").style.display="block";
+alert("Login Owner Berhasil");
+}
+}
+
+function loginAdmin(){
+let p=prompt("Password Admin:");
+if(p==="admin123"){
+document.getElementById("btnAdmin").style.display="block";
+document.getElementById("logoutBtn").style.display="block";
+alert("Login Admin Berhasil");
+}
+}
+
+function logout(){
+document.getElementById("btnConfirm").style.display="none";
+document.getElementById("btnAdmin").style.display="none";
+document.getElementById("logoutBtn").style.display="none";
+}
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, onValue, update }
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyCIBnT-yzdgwqJ3adsOPyI20h0MIV1GI44",
+authDomain: "joki-gendong.firebaseapp.com",
+databaseURL: "https://joki-gendong-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId: "joki-gendong",
+storageBucket: "joki-gendong.firebasestorage.app",
+messagingSenderId: "319862347248",
+appId: "1:319862347248:web:6d829984acb6d82acd3935"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const ordersRef = ref(db, "orders");
+
+let orders = {};
+
+onValue(ordersRef, (snapshot) => {
+orders = snapshot.val() || {};
+render();
+});
+
+window.tambahOrder = function(){
+const nama=document.getElementById("nama");
+const wa=document.getElementById("wa");
+const match=document.getElementById("match");
+const mode=document.getElementById("mode");
+const total=document.getElementById("total");
+const bukti=document.getElementById("bukti");
+
+if(!nama.value || !wa.value || !match.value || !bukti.files[0]){
+alert("Lengkapi semua data!");
+return;
+}
+
+const reader = new FileReader();
+reader.onload = function(e){
+push(ordersRef,{
+nama:nama.value,
+wa:wa.value,
+mode:mode.selectedOptions[0].text,
+match:match.value,
+total:total.innerText,
+status:"Menunggu Konfirmasi",
+bukti:e.target.result,
+alasan:""
+});
+alert("Order berhasil ditambahkan!");
+nama.value=""; wa.value=""; match.value=""; bukti.value="";
+};
+reader.readAsDataURL(bukti.files[0]);
+};
+
+window.konfirmasi=id=>update(ref(db,"orders/"+id),{status:"Menunggu Joki"});
+
+window.tolak=function(id){
+let alasan=prompt("Masukkan alasan penolakan:");
+if(alasan){
+update(ref(db,"orders/"+id),{
+status:"Ditolak",
+alasan:alasan
+});
+}
+};
+
+window.selesai=id=>update(ref(db,"orders/"+id),{status:"Selesai"});
+
+function render(){
+document.getElementById("listQueue").innerHTML="";
+document.getElementById("listHistory").innerHTML="";
+document.getElementById("listConfirm").innerHTML="";
+document.getElementById("listAdmin").innerHTML="";
+
+Object.entries(orders).forEach(([id,o])=>{
+
+if(o.status==="Menunggu Konfirmasi"){
+document.getElementById("listConfirm").innerHTML+=`
+<div class="order">
+<b>Nama:</b> ${o.nama}<br>
+<b>WhatsApp:</b> ${o.wa}<br>
+<b>Mode:</b> ${o.mode}<br>
+<b>Jumlah Match:</b> ${o.match}<br>
+<b>Total:</b> Rp ${o.total}<br><br>
+<img src="${o.bukti}"><br><br>
+<a href="${o.bukti}" download="bukti-${o.nama}.jpg">
+<button>Download Bukti</button>
+</a><br><br>
+<button onclick="konfirmasi('${id}')">Konfirmasi</button>
+<button onclick="tolak('${id}')">Tolak</button>
+</div>`;
+}
+
+if(o.status==="Menunggu Joki"){
+document.getElementById("listAdmin").innerHTML+=`
+<div class="order">
+<b>${o.nama}</b><br>
+<button onclick="selesai('${id}')">Selesai</button>
+</div>`;
+}
+
+if(o.status==="Selesai"){
+document.getElementById("listHistory").innerHTML+=`
+<div class="order">
+<b>${o.nama}</b><br>
+✅ Selesai
+</div>`;
+}
+
+if(o.status==="Ditolak"){
+document.getElementById("listHistory").innerHTML+=`
+<div class="order" style="border:2px solid red;">
+<b>${o.nama}</b><br>
+❌ Transaksi Ditolak<br>
+<b>Alasan:</b> ${o.alasan}
+</div>`;
+}
+
+});
+}
+</script>
+
+</body>
+</html>
